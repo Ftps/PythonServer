@@ -2,15 +2,20 @@
 
 import gi, data, time
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
-dir = {'DataBase':'Cur', 'Math':['Dir', '4096'], 'Book.pdf':['File', '19986']}
+dir =  [('DataBase', 'Cur', '4096'),
+        ('Math', 'Dir', '4096'),
+        ('Book.pdf', 'File', '19986')]
 
 class Main_Client(Gtk.Window):
 
     def __init__(self):
         Gtk.Window.__init__(self, title='Ftps\'s Drive')
-        self.set_size_request(1280, 800)
+        #self.set_size_request(1280, 800)
+        color = Gdk.color_parse('grey')
+        rgba = Gdk.RGBA.from_color(color)
+        self.override_background_color(0, rgba)
         self.s = None
         self.timeout_id = None
         self.running_cycle()
@@ -25,12 +30,78 @@ class Main_Client(Gtk.Window):
 
     def running_cycle(self):
         grid = Gtk.Grid()
+        grid.set_column_homogeneous(True)
+        grid.set_row_homogeneous(True)
+
+        list_store = Gtk.ListStore(str, str, str)
+        for ref in dir:
+            list_store.append(list(ref))
+        lang = list_store.filter_new()
+
+        self.treeview = Gtk.TreeView.new_with_model(lang)
+        for i, column_title in enumerate(['Name', 'Type', 'Size']):
+            renderer = Gtk.CellRendererText()
+            column = Gtk.TreeViewColumn(column_title, renderer, text=i)
+            self.treeview.append_column(column)
+
+        box_top = Gtk.Box(spacing=6)
+        grid.attach(box_top, 0, 0, 1, 1)
+
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_vexpand(True)
+        grid.attach(scroll, 1, 1, 14, 15)
+        scroll.add(self.treeview)
+
+        box_sep = Gtk.Box(spacing=6)
+        grid.attach_next_to(box_sep, scroll, Gtk.PositionType.BOTTOM, 1, 1)
+
+        dow_but = Gtk.Button.new_with_label('Add File')
+        dow_but.connect('clicked', self.download_but)
+        grid.attach_next_to(dow_but, box_sep, Gtk.PositionType.BOTTOM, 2, 1)
+
+        box_but = Gtk.Box(spacing=6)
+        grid.attach_next_to(box_but, dow_but, Gtk.PositionType.RIGHT, 1, 1)
+
+        add_but = Gtk.Button.new_with_label('Add File')
+        add_but.connect('clicked', self.add_but)
+        grid.attach_next_to(add_but, box_but, Gtk.PositionType.RIGHT, 2, 1)
+
+        box_but1 = Gtk.Box(spacing=6)
+        grid.attach_next_to(box_but1, add_but, Gtk.PositionType.RIGHT, 1, 1)
+
+        rem_but = Gtk.Button.new_with_label('Remove File')
+        rem_but.connect('clicked', self.remove_but)
+        grid.attach_next_to(rem_but, box_but1, Gtk.PositionType.RIGHT, 2, 1)
+
+        box_but2 = Gtk.Box(spacing=6)
+        grid.attach_next_to(box_but2, rem_but, Gtk.PositionType.RIGHT, 4, 1)
 
         exit_but = Gtk.Button.new_with_label('Exit')
         exit_but.connect('clicked', self.on_exit)
-        grid.attach(exit_but, 3, 4, 1, 1)
+        grid.attach_next_to(exit_but, box_but2, Gtk.PositionType.RIGHT, 2, 1)
+
+        box_bot = Gtk.Box(spacing=6)
+        grid.attach_next_to(box_bot, exit_but, Gtk.PositionType.BOTTOM, 3, 1)
 
         self.add(grid)
+        self.show_all()
+
+        select = self.treeview.get_selection()
+        select.connect("changed", self.chnd)
+
+    def add_but(self, button):
+        print('ADD FILE')
+
+    def remove_but(self, button):
+        print('REMOVE KEBAB')
+
+    def download_but(self, button):
+        print('DOWN SYNDROME')
+
+    def chnd(self, selection):
+        model, treeiter = selection.get_selected()
+        if treeiter is not None:
+            print(model[treeiter][0])
 
 class Login_Screen(Gtk.Window):
 
