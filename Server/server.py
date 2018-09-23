@@ -4,7 +4,7 @@ import sys, socket
 from _thread import *
 import data
 
-HOST = socket.gethostname()
+HOST = ""
 PORT = 8888
 NUMBER_CONNECT = 5
 

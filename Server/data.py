@@ -1,7 +1,7 @@
 import sys, socket, time, pickle, os, glob
 
 BUFFSIZE = 4096
-DEFAULT_FOLDER = '/home/ftps/Prog/Python/S&C/Server/DataBase'
+DEFAULT_FOLDER = '/home/ftps/Documents/DataBase'
 
 def wait(conn, x):
     while conn.recv(BUFFSIZE) != x:
@@ -32,7 +32,7 @@ def start_user(conn, add):
     user = conn.recv(BUFFSIZE)
     conn.send(b'pwd')
     password = conn.recv(BUFFSIZE)
-    with open(DEFAULT_FOLDER + '/../Data/User.txt', encoding='utf-8') as f:
+    with open('/home/ftps/Prog/PythonServer/Server/Data/User.txt', encoding='utf-8') as f:
         for line in f:
             u = line.split(None, 3)
             if str.encode(u[0]) == user and str.encode(u[1]) == password:
