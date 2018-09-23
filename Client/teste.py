@@ -15,6 +15,17 @@ software_list = [("Firefox", 2002,  "C++"),
                  ("Git", 2005, "C"),
                  ("Linux Kernel", 1991, "C"),
                  ("GCC", 1987, "C"),
+                 ("Frostwire", 2004, "Java"),
+                 ("Firefox", 2002,  "C++"),
+                 ("Eclipse", 2004, "Java" ),
+                 ("Pitivi", 2004, "Python"),
+                 ("Netbeans", 1996, "Java"),
+                 ("Chrome", 2008, "C++"),
+                 ("Filezilla", 2001, "C++"),
+                 ("Bazaar", 2005, "Python"),
+                 ("Git", 2005, "C"),
+                 ("Linux Kernel", 1991, "C"),
+                 ("GCC", 1987, "C"),
                  ("Frostwire", 2004, "Java")]
 
 class TreeViewFilterWindow(Gtk.Window):
@@ -50,7 +61,7 @@ class TreeViewFilterWindow(Gtk.Window):
         #creating buttons to filter by programming language, and setting up their events
         self.buttons = list()
         for prog_language in ["Java", "C", "C++", "Python", "None"]:
-            button = Gtk.Button(prog_language)
+            button = Gtk.Button(label=prog_language)
             self.buttons.append(button)
             button.connect("clicked", self.on_selection_button_clicked)
 
