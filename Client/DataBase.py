@@ -1,12 +1,13 @@
 #!/usr/bin/python3 -B
 
-import gi, data, time
+import gi, data, time, warnings
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 
 dir =  [('DataBase', 'Cur', '4096'),
         ('Math', 'Dir', '4096'),
-        ('Book.pdf', 'File', '19986')]
+        ('Book.pdf', 'File', '19986'),
+        ('File.docx', 'File', '1287')]
 
 class Main_Client(Gtk.Window):
 
@@ -15,7 +16,11 @@ class Main_Client(Gtk.Window):
         #self.set_size_request(1280, 800)
         color = Gdk.color_parse('grey')
         rgba = Gdk.RGBA.from_color(color)
-        self.override_background_color(0, rgba)
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore",category=DeprecationWarning)
+            self.override_background_color(0, rgba)
+
         self.s = None
         self.timeout_id = None
         self.running_cycle()
@@ -33,13 +38,18 @@ class Main_Client(Gtk.Window):
         grid.set_column_homogeneous(True)
         grid.set_row_homogeneous(True)
 
-        list_store = Gtk.ListStore(str, str, str)
+        self.oof = None
+
+        self.list_store = Gtk.ListStore(str, str, str)
         for ref in dir:
-            list_store.append(list(ref))
-        lang = list_store.filter_new()
+            if ref[1] != 'Cur':
+                self.list_store.append(list(ref))
+            else:
+                self.oof = ref
+        lang = self.list_store.filter_new()
 
         self.treeview = Gtk.TreeView.new_with_model(lang)
-        for i, column_title in enumerate(['Name', 'Type', 'Size']):
+        for i, column_title in enumerate(['Name', 'Type', 'Size(Kb)']):
             renderer = Gtk.CellRendererText()
             column = Gtk.TreeViewColumn(column_title, renderer, text=i)
             self.treeview.append_column(column)
@@ -47,20 +57,30 @@ class Main_Client(Gtk.Window):
         box_top = Gtk.Box(spacing=6)
         grid.attach(box_top, 0, 0, 1, 1)
 
+        self.back = Gtk.Button(label='<')
+        self.back.connect('clicked', self.back_dir)
+        grid.attach(self.back, 1, 1, 1, 1)
+
+        label = Gtk.Button(label=self.oof[0])
+        grid.attach_next_to(label, self.back, Gtk.PositionType.RIGHT, 2, 1)
+
+        box_init = Gtk.Box(spacing=6)
+        grid.attach_next_to(box_init, self.back, Gtk.PositionType.BOTTOM, 1, 1)
+
         scroll = Gtk.ScrolledWindow()
         scroll.set_vexpand(True)
-        grid.attach(scroll, 1, 1, 14, 15)
+        grid.attach_next_to(scroll, box_init, Gtk.PositionType.BOTTOM, 14, 15)
         scroll.add(self.treeview)
 
         box_sep = Gtk.Box(spacing=6)
         grid.attach_next_to(box_sep, scroll, Gtk.PositionType.BOTTOM, 1, 1)
 
-        dow_but = Gtk.Button.new_with_label('Add File')
-        dow_but.connect('clicked', self.download_but)
-        grid.attach_next_to(dow_but, box_sep, Gtk.PositionType.BOTTOM, 2, 1)
+        self.change_but = Gtk.Button.new_with_label('Change Directory')
+        self.change_but.connect('clicked', self.action_but)
+        grid.attach_next_to(self.change_but, box_sep, Gtk.PositionType.BOTTOM, 2, 1)
 
         box_but = Gtk.Box(spacing=6)
-        grid.attach_next_to(box_but, dow_but, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(box_but, self.change_but, Gtk.PositionType.RIGHT, 1, 1)
 
         add_but = Gtk.Button.new_with_label('Add File')
         add_but.connect('clicked', self.add_but)
@@ -95,13 +115,22 @@ class Main_Client(Gtk.Window):
     def remove_but(self, button):
         print('REMOVE KEBAB')
 
-    def download_but(self, button):
+    def action_but(self, button):
         print('DOWN SYNDROME')
+        print('Button Label: ' + button.get_label())
+
+    def back_dir(self, button):
+        print("BACK THE HELL UP")
 
     def chnd(self, selection):
-        model, treeiter = selection.get_selected()
-        if treeiter is not None:
-            print(model[treeiter][0])
+        model, mode = selection.get_selected()
+        if mode is not None:
+            if model[mode][1] != 'Dir':
+                self.change_but.set_label('Download File')
+            else:
+                self.change_but.set_label('Change Directory')
+
+
 
 class Login_Screen(Gtk.Window):
 
