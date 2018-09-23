@@ -2,7 +2,7 @@ import sys, socket, time, pickle, os, tkinter, multiprocessing
 
 BUFFSIZE = 4096
 DEFAULT_FOLDER = '/home/ftps/Documents/'
-host = socket.gethostname()
+host = "25.39.193.188"
 port = 8888
 
 def wait(conn, x):

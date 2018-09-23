@@ -10,7 +10,7 @@ except socket.error:
     sys.exit()
 print('Socket created')
 
-host = "193.136.143.133"
+host = "25.39.193.188"
 port = 8888
 print('Connecting to server...')
 s.connect((host, port))
