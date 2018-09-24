@@ -4,7 +4,7 @@ import gi, data, time, warnings
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 
-dir =  [('DataBase', 'Cur', '4096'),
+dir =  [('Books', 'Cur', '4096'),
         ('Math', 'Dir', '4096'),
         ('Book.pdf', 'File', '19986'),
         ('File.docx', 'File', '1287')]
@@ -57,7 +57,10 @@ class Main_Client(Gtk.Window):
         box_top = Gtk.Box(spacing=6)
         grid.attach(box_top, 0, 0, 1, 1)
 
-        self.back = Gtk.Button(label='<')
+        if self.oof[0] == 'DataBase':
+            self.back = Gtk.Button(label='X')
+        else:
+            self.back = Gtk.Button(label='<')
         self.back.connect('clicked', self.back_dir)
         grid.attach(self.back, 1, 1, 1, 1)
 
@@ -120,7 +123,10 @@ class Main_Client(Gtk.Window):
         print('Button Label: ' + button.get_label())
 
     def back_dir(self, button):
-        print("BACK THE HELL UP")
+        if button.get_label() == '<':
+            print('BACK THE HELL UP')
+        else:
+            print('YOU CAN\'T GO BACK')
 
     def chnd(self, selection):
         model, mode = selection.get_selected()
