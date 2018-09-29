@@ -9,6 +9,55 @@ dir =  [('Books', 'Cur', '4096'),
         ('Book.pdf', 'File', '19986'),
         ('File.docx', 'File', '1287')]
 
+class Path_Window(Gtk.Window):
+
+    def __init__(self):
+        Gtk.Window.__init__(self, title='Change Path')
+        self.s = None
+        self.timeout_id = None
+        self.num = 0
+
+        grid = Gtk.Grid()
+        grid.set_column_homogeneous(True)
+        grid.set_row_homogeneous(True)
+
+        box_top = Gtk.Box(spacing=6)
+        grid.attach(box_top, 0, 0, 1, 1)
+
+        label_u = Gtk.Label()
+        label_u.set_text('Path:')
+        grid.attach(label_u, 1, 1, 1, 1)
+        self.entry_u = Gtk.Entry()
+        grid.attach_next_to(self.entry_u, label_u, Gtk.PositionType.RIGHT, 3, 1)
+
+        path_but = Gtk.Button.new_with_label('New Path')
+        path_but.connect('clicked', self.new_p)
+
+        def_but = Gtk.Button.new_with_label('Default Path')
+        def_but.connect('clicked', self.def_fol)
+
+        exit_but = Gtk.Button.new_with_label('Exit')
+        exit_but.connect('clicked', self.exit_but)
+
+
+    def new_p(self, button):
+        self.num = 1
+        self.destroy()
+
+    def def_fol(self, button):
+        self.num = 2
+        self.destroy()
+
+    def exit_but(self, button):
+        self.num = 0
+        self.destroy()
+
+    def get_num(self):
+        return self.num
+
+    def get_path(self):
+        return self.entry_u.get_text()
+
 class Main_Client(Gtk.Window):
 
     def __init__(self):
@@ -24,6 +73,7 @@ class Main_Client(Gtk.Window):
         self.s = None
         self.timeout_id = None
         self.download_folder = data.DEFAULT_FOLDER
+        self.transfer = 1
         self.running_cycle()
 
 
@@ -131,8 +181,8 @@ class Main_Client(Gtk.Window):
         self.add(grid)
         self.show_all()
 
-        select = self.treeview.get_selection()
-        select.connect("changed", self.chnd)
+        self.select = self.treeview.get_selection()
+        self.select.connect("changed", self.chnd)
 
     def add_but(self, button):
         print('ADD FILE')
@@ -145,11 +195,30 @@ class Main_Client(Gtk.Window):
 
 
     def path_change(self, button):
+        p = Path_Window()
+        p.connect('destroy', Gtk.main_quit)
+        n = p.get_num()
+        if n == 0:
+            return
+        if n == 1:
+            test = p.get_path()
+            if os.path.exists(test):
+                self.download_folder = test
+            else:
+                print('You bafoon')
+        if n == 2:
+            self.download_folder = data.DEFAULT_FOLDER
+
         print(self.download_folder)
 
     def action_but(self, button):
         print('DOWN SYNDROME')
         print('Button Label: ' + button.get_label())
+        model, mode = self.select.get_selected()
+        try:
+            print(model[mode][0])
+        except:
+            print('Nothing selected')
 
     def back_dir(self, button):
         if button.get_label() == '<':
@@ -226,6 +295,12 @@ class Login_Screen(Gtk.Window):
     def ret_sock(self):
         return self.s
 
+def kill_drive(win):
+    if win.transfer == 1:
+        return
+
+    win.s.send(b'0')
+    Gtk.main_quit()
 
 if __name__ == '__main__':
     win = Login_Screen()
@@ -236,7 +311,7 @@ if __name__ == '__main__':
 
     if s != None:
         win = Main_Client()
-        win.connect('destroy', Gtk.main_quit)
+        win.connect('destroy', kill_drive)
         win.get_soc(s)
         win.show_all()
         Gtk.main()
