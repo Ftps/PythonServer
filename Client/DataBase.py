@@ -23,6 +23,7 @@ class Main_Client(Gtk.Window):
 
         self.s = None
         self.timeout_id = None
+        self.download_folder = data.DEFAULT_FOLDER
         self.running_cycle()
 
 
@@ -64,47 +65,68 @@ class Main_Client(Gtk.Window):
         self.back.connect('clicked', self.back_dir)
         grid.attach(self.back, 1, 1, 1, 1)
 
+
         label = Gtk.Button(label=self.oof[0])
         grid.attach_next_to(label, self.back, Gtk.PositionType.RIGHT, 2, 1)
 
         box_init = Gtk.Box(spacing=6)
         grid.attach_next_to(box_init, self.back, Gtk.PositionType.BOTTOM, 1, 1)
 
+
         scroll = Gtk.ScrolledWindow()
         scroll.set_vexpand(True)
         grid.attach_next_to(scroll, box_init, Gtk.PositionType.BOTTOM, 14, 15)
         scroll.add(self.treeview)
 
-        box_sep = Gtk.Box(spacing=6)
-        grid.attach_next_to(box_sep, scroll, Gtk.PositionType.BOTTOM, 1, 1)
-
-        self.change_but = Gtk.Button.new_with_label('Change Directory')
-        self.change_but.connect('clicked', self.action_but)
-        grid.attach_next_to(self.change_but, box_sep, Gtk.PositionType.BOTTOM, 2, 1)
-
-        box_but = Gtk.Box(spacing=6)
-        grid.attach_next_to(box_but, self.change_but, Gtk.PositionType.RIGHT, 1, 1)
 
         add_but = Gtk.Button.new_with_label('Add File')
         add_but.connect('clicked', self.add_but)
-        grid.attach_next_to(add_but, box_but, Gtk.PositionType.RIGHT, 2, 1)
 
-        box_but1 = Gtk.Box(spacing=6)
-        grid.attach_next_to(box_but1, add_but, Gtk.PositionType.RIGHT, 1, 1)
-
-        rem_but = Gtk.Button.new_with_label('Remove File')
+        rem_but = Gtk.Button.new_with_label('Remove File/Dir')
         rem_but.connect('clicked', self.remove_but)
-        grid.attach_next_to(rem_but, box_but1, Gtk.PositionType.RIGHT, 2, 1)
 
-        box_but2 = Gtk.Box(spacing=6)
-        grid.attach_next_to(box_but2, rem_but, Gtk.PositionType.RIGHT, 4, 1)
+        mkdir_but = Gtk.Button.new_with_label('Create Directory')
+        mkdir_but.connect('clicked', self.makedir_but)
+
+
+        self.change_but = Gtk.Button.new_with_label('Change Directory')
+        self.change_but.connect('clicked', self.action_but)
+
+        path_but = Gtk.Button.new_with_label('Change Path')
+        path_but.connect('clicked', self.path_change)
+
+        home_but = Gtk.Button.new_with_label('Home')
+        home_but.connect('clicked', self.action_but)
+
 
         exit_but = Gtk.Button.new_with_label('Exit')
         exit_but.connect('clicked', self.on_exit)
-        grid.attach_next_to(exit_but, box_but2, Gtk.PositionType.RIGHT, 2, 1)
 
-        box_bot = Gtk.Box(spacing=6)
-        grid.attach_next_to(box_bot, exit_but, Gtk.PositionType.BOTTOM, 3, 1)
+
+        box_1 = Gtk.Box(spacing=6)
+        box_2 = Gtk.Box(spacing=6)
+        box_3 = Gtk.Box(spacing=6)
+        box_4 = Gtk.Box(spacing=6)
+        box_5 = Gtk.Box(spacing=6)
+        box_6 = Gtk.Box(spacing=6)
+        box_7 = Gtk.Box(spacing=6)
+        box_8 = Gtk.Box(spacing=6)
+
+        grid.attach_next_to(box_1, scroll, Gtk.PositionType.BOTTOM, 1, 1)
+        grid.attach_next_to(add_but, box_1, Gtk.PositionType.BOTTOM, 2, 1)
+        grid.attach_next_to(box_2, add_but, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(rem_but, box_2, Gtk.PositionType.RIGHT, 2, 1)
+        grid.attach_next_to(box_3, rem_but, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(mkdir_but, box_3, Gtk.PositionType.RIGHT, 2, 1)
+        grid.attach_next_to(box_4, add_but, Gtk.PositionType.BOTTOM, 1, 1)
+        grid.attach_next_to(self.change_but, box_4, Gtk.PositionType.BOTTOM, 2, 1)
+        grid.attach_next_to(box_5, self.change_but, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(path_but, box_5, Gtk.PositionType.RIGHT, 2, 1)
+        grid.attach_next_to(box_6, path_but, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(home_but, box_6, Gtk.PositionType.RIGHT, 2, 1)
+        grid.attach_next_to(box_7, home_but, Gtk.PositionType.RIGHT, 4, 1)
+        grid.attach_next_to(exit_but, box_7, Gtk.PositionType.RIGHT, 2, 1)
+        grid.attach_next_to(box_8, exit_but, Gtk.PositionType.BOTTOM, 3, 1)
 
         self.add(grid)
         self.show_all()
@@ -117,6 +139,13 @@ class Main_Client(Gtk.Window):
 
     def remove_but(self, button):
         print('REMOVE KEBAB')
+
+    def makedir_but(self, button):
+        print('MAKE DIRECT')
+
+
+    def path_change(self, button):
+        print(self.download_folder)
 
     def action_but(self, button):
         print('DOWN SYNDROME')
