@@ -75,18 +75,23 @@ def data_base(conn, add, u):
 
 def change_folder(conn, u, folder=None):
     if folder == None:
-        conn.send(b'Send folder name')
+        conn.send(b'name')
         folder = conn.recv(BUFFSIZE).decode('utf-8')
         print('Changing folder as a request of user ' + u[0] + ' to ' + os.path.realpath(folder))
 
     os.chdir(folder)
-    fold = {os.path.realpath(folder):'loc'}
+    if folder == DEFAULT_FOLDER:
+        folder = 'DataBase'
+
+    fold = [(folder, 'Cur', '4096')]
     for elem in glob.glob('*'):
         if os.path.isdir(elem):
-            fold.update({elem:'dir'})
+            fold.append((elem, 'Dir', '4096'))
         else:
-            fold.update({elem:'fil'})
+            fold.append((elem, 'File', str(os.stat(elem).st_size)))
 
+    for i in fold:
+        print(i)
 
     conn.send(pickle.dumps(fold))
 

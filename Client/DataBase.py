@@ -1,6 +1,6 @@
 #!/usr/bin/python3 -B
 
-import gi, data, time, warnings, os
+import gi, data, time, warnings, os, pickle
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 
@@ -81,6 +81,7 @@ class Main_Client(Gtk.Window):
         self.download_folder = data.DEFAULT_FOLDER
         self.transfer = 1
         self.action = 1
+        self.treeview = None
 
 
     def get_soc(self, s):
@@ -100,49 +101,17 @@ class Main_Client(Gtk.Window):
             warnings.filterwarnings("ignore",category=DeprecationWarning)
             self.override_background_color(0, rgba)
 
-        grid = Gtk.Grid()
-        grid.set_column_homogeneous(True)
-        grid.set_row_homogeneous(True)
+        self.grid = Gtk.Grid()
+        self.grid.set_column_homogeneous(True)
+        self.grid.set_row_homogeneous(True)
 
         self.oof = None
 
-        self.list_store = Gtk.ListStore(str, str, str)
-        for ref in dir:
-            if ref[1] != 'Cur':
-                self.list_store.append(list(ref))
-            else:
-                self.oof = ref
-        lang = self.list_store.filter_new()
-
-        self.treeview = Gtk.TreeView.new_with_model(lang)
-        for i, column_title in enumerate(['Name', 'Type', 'Size(Kb)']):
-            renderer = Gtk.CellRendererText()
-            column = Gtk.TreeViewColumn(column_title, renderer, text=i)
-            self.treeview.append_column(column)
-
         box_top = Gtk.Box(spacing=6)
-        grid.attach(box_top, 0, 0, 1, 1)
+        self.grid.attach(box_top, 0, 0, 1, 1)
 
-        if self.oof[0] == 'DataBase':
-            self.back = Gtk.Button(label='X')
-        else:
-            self.back = Gtk.Button(label='<')
-        self.back.connect('clicked', self.back_dir)
-        grid.attach(self.back, 1, 1, 1, 1)
-
-
-        label = Gtk.Button(label=self.oof[0])
-        grid.attach_next_to(label, self.back, Gtk.PositionType.RIGHT, 2, 1)
-
-        box_init = Gtk.Box(spacing=6)
-        grid.attach_next_to(box_init, self.back, Gtk.PositionType.BOTTOM, 1, 1)
-
-
-        scroll = Gtk.ScrolledWindow()
-        scroll.set_vexpand(True)
-        grid.attach_next_to(scroll, box_init, Gtk.PositionType.BOTTOM, 14, 15)
-        scroll.add(self.treeview)
-
+        stack = pickle.loads(self.s.recv(data.BUFFSIZE))
+        self.add_tree(stack)
 
         add_but = Gtk.Button.new_with_label('Add File')
         add_but.connect('clicked', self.add_but)
@@ -177,27 +146,24 @@ class Main_Client(Gtk.Window):
         box_7 = Gtk.Box(spacing=6)
         box_8 = Gtk.Box(spacing=6)
 
-        grid.attach_next_to(box_1, scroll, Gtk.PositionType.BOTTOM, 1, 1)
-        grid.attach_next_to(add_but, box_1, Gtk.PositionType.BOTTOM, 2, 1)
-        grid.attach_next_to(box_2, add_but, Gtk.PositionType.RIGHT, 1, 1)
-        grid.attach_next_to(rem_but, box_2, Gtk.PositionType.RIGHT, 2, 1)
-        grid.attach_next_to(box_3, rem_but, Gtk.PositionType.RIGHT, 1, 1)
-        grid.attach_next_to(mkdir_but, box_3, Gtk.PositionType.RIGHT, 2, 1)
-        grid.attach_next_to(box_4, add_but, Gtk.PositionType.BOTTOM, 1, 1)
-        grid.attach_next_to(self.change_but, box_4, Gtk.PositionType.BOTTOM, 2, 1)
-        grid.attach_next_to(box_5, self.change_but, Gtk.PositionType.RIGHT, 1, 1)
-        grid.attach_next_to(path_but, box_5, Gtk.PositionType.RIGHT, 2, 1)
-        grid.attach_next_to(box_6, path_but, Gtk.PositionType.RIGHT, 1, 1)
-        grid.attach_next_to(home_but, box_6, Gtk.PositionType.RIGHT, 2, 1)
-        grid.attach_next_to(box_7, home_but, Gtk.PositionType.RIGHT, 4, 1)
-        grid.attach_next_to(exit_but, box_7, Gtk.PositionType.RIGHT, 2, 1)
-        grid.attach_next_to(box_8, exit_but, Gtk.PositionType.BOTTOM, 3, 1)
+        self.grid.attach(box_1, 1, 18, 1, 1)
+        self.grid.attach_next_to(add_but, box_1, Gtk.PositionType.BOTTOM, 2, 1)
+        self.grid.attach_next_to(box_2, add_but, Gtk.PositionType.RIGHT, 1, 1)
+        self.grid.attach_next_to(rem_but, box_2, Gtk.PositionType.RIGHT, 2, 1)
+        self.grid.attach_next_to(box_3, rem_but, Gtk.PositionType.RIGHT, 1, 1)
+        self.grid.attach_next_to(mkdir_but, box_3, Gtk.PositionType.RIGHT, 2, 1)
+        self.grid.attach_next_to(box_4, add_but, Gtk.PositionType.BOTTOM, 1, 1)
+        self.grid.attach_next_to(self.change_but, box_4, Gtk.PositionType.BOTTOM, 2, 1)
+        self.grid.attach_next_to(box_5, self.change_but, Gtk.PositionType.RIGHT, 1, 1)
+        self.grid.attach_next_to(path_but, box_5, Gtk.PositionType.RIGHT, 2, 1)
+        self.grid.attach_next_to(box_6, path_but, Gtk.PositionType.RIGHT, 1, 1)
+        self.grid.attach_next_to(home_but, box_6, Gtk.PositionType.RIGHT, 2, 1)
+        self.grid.attach_next_to(box_7, home_but, Gtk.PositionType.RIGHT, 4, 1)
+        self.grid.attach_next_to(exit_but, box_7, Gtk.PositionType.RIGHT, 2, 1)
+        self.grid.attach_next_to(box_8, exit_but, Gtk.PositionType.BOTTOM, 3, 1)
 
-        self.add(grid)
+        self.add(self.grid)
         self.show_all()
-
-        self.select = self.treeview.get_selection()
-        self.select.connect("changed", self.chnd)
 
     def add_but(self, button):
         print('ADD FILE')
@@ -221,6 +187,80 @@ class Main_Client(Gtk.Window):
             print(model[mode][0])
         except:
             print('Nothing selected')
+            return
+
+        if button.get_label() == 'Change Directory':
+            self.s.send(b'1')
+            t = self.s.recv(data.BUFFSIZE)
+            if  t == b'name':
+                self.s.send(str.encode(model[mode][0]))
+
+                self.oof = None
+
+                stack = pickle.loads(self.s.recv(data.BUFFSIZE))
+                print(stack)
+                self.add_tree(stack)
+
+            else:
+                print('kys')
+        elif button.get_label() == '<':
+            self.s.send(b'1')
+            t = self.s.recv(data.BUFFSIZE)
+            if  t == b'name':
+                self.s.send(str.encode('..'))
+
+                self.oof = None
+
+                stack = pickle.loads(self.s.recv(data.BUFFSIZE))
+                print(stack)
+                self.add_tree(stack)
+
+            else:
+                print('kys')
+
+    def add_tree(self, stack):
+        if self.treeview != None:
+            self.scroll.destroy()
+            self.treeview.destroy()
+        else:
+            self.back = Gtk.Button()
+            self.back.connect('clicked', self.action_but)
+            self.label = Gtk.Button()
+            self.grid.attach(self.back, 1, 1, 1, 1)
+            self.grid.attach_next_to(self.label, self.back, Gtk.PositionType.RIGHT, 2, 1)
+            box_init = Gtk.Box(spacing=6)
+            self.grid.attach_next_to(box_init, self.back, Gtk.PositionType.BOTTOM, 1, 1)
+
+
+        self.list_store = Gtk.ListStore(str, str, str)
+        for ref in stack:
+            if ref[1] != 'Cur':
+                self.list_store.append(list(ref))
+            else:
+                self.oof = ref
+        self.lang = self.list_store.filter_new()
+
+        self.treeview = Gtk.TreeView.new_with_model(self.lang)
+        for i, column_title in enumerate(['Name', 'Type', 'Size(Kb)']):
+            renderer = Gtk.CellRendererText()
+            column = Gtk.TreeViewColumn(column_title, renderer, text=i)
+            self.treeview.append_column(column)
+
+        if self.oof[0] == 'DataBase':
+            self.back.set_label('X')
+        else:
+            self.back.set_label('<')
+
+        self.label.set_label(self.oof[0])
+
+
+        self.scroll = Gtk.ScrolledWindow()
+        self.scroll.set_vexpand(True)
+        self.grid.attach(self.scroll, 1, 3, 14, 15)
+        self.scroll.add(self.treeview)
+        self.show_all()
+        self.select = self.treeview.get_selection()
+        self.select.connect("changed", self.chnd)
 
     def on_exit(self, button):
         self.s.send(b'0')
@@ -337,4 +377,3 @@ if __name__ == '__main__':
             Gtk.main()
             if win.action == 2:
                 change_path(win)
-            
