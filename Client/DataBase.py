@@ -1,6 +1,6 @@
 #!/usr/bin/python3 -B
 
-import gi, data, time, warnings
+import gi, data, time, warnings, os
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 
@@ -16,6 +16,7 @@ class Path_Window(Gtk.Window):
         self.s = None
         self.timeout_id = None
         self.num = 0
+        self.path = ""
 
         grid = Gtk.Grid()
         grid.set_column_homogeneous(True)
@@ -36,12 +37,25 @@ class Path_Window(Gtk.Window):
         def_but = Gtk.Button.new_with_label('Default Path')
         def_but.connect('clicked', self.def_fol)
 
+        v_box = Gtk.Box(spacing=6)
+
         exit_but = Gtk.Button.new_with_label('Exit')
         exit_but.connect('clicked', self.exit_but)
 
+        end_box = Gtk.Box(spacing=6)
+
+        grid.attach_next_to(path_but, label_u, Gtk.PositionType.BOTTOM, 1, 1)
+        grid.attach_next_to(def_but, path_but, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(v_box, def_but, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(exit_but, v_box, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(end_box, exit_but, Gtk.PositionType.BOTTOM, 2, 1)
+
+        self.add(grid)
+        self.show_all()
 
     def new_p(self, button):
         self.num = 1
+        self.path = self.entry_u.get_text()
         self.destroy()
 
     def def_fol(self, button):
@@ -56,11 +70,27 @@ class Path_Window(Gtk.Window):
         return self.num
 
     def get_path(self):
-        return self.entry_u.get_text()
+        return self.path
 
 class Main_Client(Gtk.Window):
 
     def __init__(self):
+
+        self.s = None
+        self.timeout_id = None
+        self.download_folder = data.DEFAULT_FOLDER
+        self.transfer = 1
+        self.action = 1
+
+
+    def get_soc(self, s):
+        self.s = s
+
+    def get_act(self):
+        return self.action
+
+    def window(self):
+
         Gtk.Window.__init__(self, title='Ftps\'s Drive')
         #self.set_size_request(1280, 800)
         color = Gdk.color_parse('grey')
@@ -70,21 +100,6 @@ class Main_Client(Gtk.Window):
             warnings.filterwarnings("ignore",category=DeprecationWarning)
             self.override_background_color(0, rgba)
 
-        self.s = None
-        self.timeout_id = None
-        self.download_folder = data.DEFAULT_FOLDER
-        self.transfer = 1
-        self.running_cycle()
-
-
-    def get_soc(self, s):
-        self.s = s
-
-    def on_exit(self, button):
-        self.s.send(b'0')
-        self.destroy()
-
-    def running_cycle(self):
         grid = Gtk.Grid()
         grid.set_column_homogeneous(True)
         grid.set_row_homogeneous(True)
@@ -195,21 +210,8 @@ class Main_Client(Gtk.Window):
 
 
     def path_change(self, button):
-        p = Path_Window()
-        p.connect('destroy', Gtk.main_quit)
-        n = p.get_num()
-        if n == 0:
-            return
-        if n == 1:
-            test = p.get_path()
-            if os.path.exists(test):
-                self.download_folder = test
-            else:
-                print('You bafoon')
-        if n == 2:
-            self.download_folder = data.DEFAULT_FOLDER
-
-        print(self.download_folder)
+        self.action = 2
+        Gtk.main_quit()
 
     def action_but(self, button):
         print('DOWN SYNDROME')
@@ -219,6 +221,11 @@ class Main_Client(Gtk.Window):
             print(model[mode][0])
         except:
             print('Nothing selected')
+
+    def on_exit(self, button):
+        self.s.send(b'0')
+        self.action = 0
+        Gtk.main_quit()
 
     def back_dir(self, button):
         if button.get_label() == '<':
@@ -275,6 +282,7 @@ class Login_Screen(Gtk.Window):
         grid.attach(box2, 4, 5, 1, 1)
 
         self.add(grid)
+        self.show_all()
         self.s = None
 
 
@@ -296,22 +304,37 @@ class Login_Screen(Gtk.Window):
         return self.s
 
 def kill_drive(win):
-    if win.transfer == 1:
-        return
-
+    win.action = 0
     win.s.send(b'0')
     Gtk.main_quit()
+
+def change_path(win):
+    p = Path_Window()
+    p.connect('destroy', Gtk.main_quit)
+    Gtk.main()
+
+    if p.get_num() == 1:
+        if os.path.exists(p.get_path()):
+            win.download_folder = p.get_path()
+        else:
+            print('Not a valid folder: ' + p.get_path())
+
+    elif p.get_num() == 2:
+        win.download_folder = data.DEFAULT_FOLDER
 
 if __name__ == '__main__':
     win = Login_Screen()
     win.connect('destroy', Gtk.main_quit)
-    win.show_all()
     Gtk.main()
     s = win.ret_sock()
 
     if s != None:
         win = Main_Client()
-        win.connect('destroy', kill_drive)
         win.get_soc(s)
-        win.show_all()
-        Gtk.main()
+        win.window()
+        win.connect('destroy', kill_drive)
+        while win.action != 0:
+            Gtk.main()
+            if win.action == 2:
+                change_path(win)
+            
