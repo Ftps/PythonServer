@@ -62,11 +62,9 @@ def data_base(conn, add, u):
         elif h == b'1':
             change_folder(conn, u)
         elif h == b'2':
-            pass
-            #send_file
+            create_folder(conn, u)
         elif h == b'3':
-            pass
-            #receive_file
+            change_folder(conn, u, DEFAULT_FOLDER)
         else:
             pass
 
@@ -80,8 +78,7 @@ def change_folder(conn, u, folder=None):
         print('Changing folder as a request of user ' + u[0] + ' to ' + os.path.realpath(folder))
 
     os.chdir(folder)
-    if folder == DEFAULT_FOLDER:
-        folder = 'DataBase'
+    folder = os.path.split(os.getcwd())[1]
 
     fold = [(folder, 'Cur', '4096')]
     for elem in glob.glob('*'):
@@ -90,10 +87,21 @@ def change_folder(conn, u, folder=None):
         else:
             fold.append((elem, 'File', str(os.stat(elem).st_size)))
 
-    for i in fold:
-        print(i)
-
     conn.send(pickle.dumps(fold))
+
+def create_folder(conn, u):
+    conn.send(b'name')
+    folder = conn.recv(BUFFSIZE).decode('utf-8')
+    print('Creating folder ' + folder + ' in ' + os.getcwd() + ' as a request of user ' + u[0] + '.')
+    folder = os.path.join(os.getcwd(), folder)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+        conn.send(b'1')
+    else:
+        conn.send(b'0')
+
+    conn.recv(BUFFSIZE)
+    change_folder(conn, u, '.')
 
 def send_file(conn, add, namefile):
     print('Sending \'' + namefile + '\' to ' + add[0] + ':' + str(add[1]))

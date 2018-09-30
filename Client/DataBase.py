@@ -1,6 +1,6 @@
 #!/usr/bin/python3 -B
 
-import gi, data, time, warnings, os, pickle
+import gi, data, time, warnings, os, pickle, sys
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 
@@ -8,6 +8,60 @@ dir =  [('Books', 'Cur', '4096'),
         ('Math', 'Dir', '4096'),
         ('Book.pdf', 'File', '19986'),
         ('File.docx', 'File', '1287')]
+
+class Folder_Window(Gtk.Window):
+    def __init__(self):
+        Gtk.Window.__init__(self, title='Change Path')
+        self.s = None
+        self.timeout_id = None
+        self.num = 0
+        self.folder = ""
+
+        grid = Gtk.Grid()
+        grid.set_column_homogeneous(True)
+        grid.set_row_homogeneous(True)
+
+        box_top = Gtk.Box(spacing=6)
+        grid.attach(box_top, 0, 0, 1, 1)
+
+        label_u = Gtk.Label()
+        label_u.set_text('Folder Name:')
+        grid.attach(label_u, 1, 1, 1, 1)
+        self.entry_u = Gtk.Entry()
+        grid.attach_next_to(self.entry_u, label_u, Gtk.PositionType.RIGHT, 2, 1)
+
+        new_but = Gtk.Button.new_with_label('Create')
+        new_but.connect('clicked', self.create_f)
+
+        v_box = Gtk.Box(spacing=6)
+
+        exit_but = Gtk.Button.new_with_label('Cancel')
+        exit_but.connect('clicked', self.exit_but)
+
+        end_box = Gtk.Box(spacing=6)
+
+        grid.attach_next_to(new_but, label_u, Gtk.PositionType.BOTTOM, 1, 1)
+        grid.attach_next_to(v_box, new_but, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(exit_but, v_box, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(end_box, exit_but, Gtk.PositionType.BOTTOM, 2, 1)
+
+        self.add(grid)
+        self.show_all()
+
+    def create_f(self, button):
+        self.num = 1
+        self.folder = self.entry_u.get_text()
+        self.destroy()
+
+    def exit_but(self, button):
+        self.num = 0
+        self.destroy()
+
+    def get_num(self):
+        return self.num
+
+    def get_fold(self):
+        return self.folder
 
 class Path_Window(Gtk.Window):
 
@@ -39,7 +93,7 @@ class Path_Window(Gtk.Window):
 
         v_box = Gtk.Box(spacing=6)
 
-        exit_but = Gtk.Button.new_with_label('Exit')
+        exit_but = Gtk.Button.new_with_label('Cancel')
         exit_but.connect('clicked', self.exit_but)
 
         end_box = Gtk.Box(spacing=6)
@@ -130,7 +184,7 @@ class Main_Client(Gtk.Window):
         path_but.connect('clicked', self.path_change)
 
         home_but = Gtk.Button.new_with_label('Home')
-        home_but.connect('clicked', self.action_but)
+        home_but.connect('clicked', self.home_but)
 
 
         exit_but = Gtk.Button.new_with_label('Exit')
@@ -172,38 +226,21 @@ class Main_Client(Gtk.Window):
         print('REMOVE KEBAB')
 
     def makedir_but(self, button):
-        print('MAKE DIRECT')
+        self.action = 3
+        self.s.send(b'2')
+        Gtk.main_quit()
 
+    def home_but(self, button):
+        self.s.send(b'3')
+        stack = pickle.loads(self.s.recv(data.BUFFSIZE))
+        self.add_tree(stack)
 
     def path_change(self, button):
         self.action = 2
         Gtk.main_quit()
 
     def action_but(self, button):
-        print('DOWN SYNDROME')
-        print('Button Label: ' + button.get_label())
-        model, mode = self.select.get_selected()
-        try:
-            print(model[mode][0])
-        except:
-            print('Nothing selected')
-            return
-
-        if button.get_label() == 'Change Directory':
-            self.s.send(b'1')
-            t = self.s.recv(data.BUFFSIZE)
-            if  t == b'name':
-                self.s.send(str.encode(model[mode][0]))
-
-                self.oof = None
-
-                stack = pickle.loads(self.s.recv(data.BUFFSIZE))
-                print(stack)
-                self.add_tree(stack)
-
-            else:
-                print('kys')
-        elif button.get_label() == '<':
+        if button.get_label() == '<':
             self.s.send(b'1')
             t = self.s.recv(data.BUFFSIZE)
             if  t == b'name':
@@ -214,9 +251,33 @@ class Main_Client(Gtk.Window):
                 stack = pickle.loads(self.s.recv(data.BUFFSIZE))
                 print(stack)
                 self.add_tree(stack)
-
+                return
             else:
-                print('kys')
+                print('Error changing directory.')
+                sys.exit(-1)
+
+        elif button.get_label() == 'X':
+            return
+
+        model, mode = self.select.get_selected()
+
+        try:
+            print(type(mode))
+        except:
+            return
+
+        if button.get_label() == 'Change Directory':
+            self.s.send(b'1')
+            t = self.s.recv(data.BUFFSIZE)
+            if  t == b'name':
+                self.s.send(str.encode(model[mode][0]))
+                self.oof = None
+                stack = pickle.loads(self.s.recv(data.BUFFSIZE))
+                self.add_tree(stack)
+            else:
+                print('Error changing directory.')
+                sys.exit(-1)
+
 
     def add_tree(self, stack):
         if self.treeview != None:
@@ -362,6 +423,29 @@ def change_path(win):
     elif p.get_num() == 2:
         win.download_folder = data.DEFAULT_FOLDER
 
+def make_dir(win):
+    p = Folder_Window()
+    p.connect('destroy', Gtk.main_quit)
+    Gtk.main()
+
+    if p.get_num() == 1:
+        t = win.s.recv(data.BUFFSIZE)
+        if t == b'name':
+            win.s.send(str.encode(p.get_fold()))
+            t = win.s.recv(data.BUFFSIZE)
+            if t == b'1':
+                print('Folder created.')
+            else:
+                print('Folder already exists.')
+
+            win.s.send(b'1')
+            stack = pickle.loads(win.s.recv(data.BUFFSIZE))
+            win.add_tree(stack)
+            print('New tree formed.')
+        else:
+            print('Error creating folder.')
+            sys.exit(-2)
+
 if __name__ == '__main__':
     win = Login_Screen()
     win.connect('destroy', Gtk.main_quit)
@@ -377,3 +461,5 @@ if __name__ == '__main__':
             Gtk.main()
             if win.action == 2:
                 change_path(win)
+            elif win.action == 3:
+                make_dir(win)
