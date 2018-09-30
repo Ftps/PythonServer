@@ -69,6 +69,8 @@ def data_base(conn, add, u):
             delete_object(conn, u)
         elif h == b'5':
             send_file(conn, u)
+        elif h == b'6':
+            receive_file(conn, u)
         else:
             print('Unknown action.')
             break
@@ -134,15 +136,17 @@ def send_file(conn, u):
     wait(conn, b'done')
     print('File confirmation from user ' + u[0] + ' received.')
 
-def receive_file(conn, add, local=DEFAULT_FOLDER):
+def receive_file(conn, u):
     conn.send(b'ready')
     head = pickle.loads(conn.recv(BUFFSIZE))
     conn.send(b'send')
-    print('Receiving file \'' + head[0] + '\' from ' + add[0] + ':' + str(add[1]))
-    f = open(local + head[0], 'wb')
+    print('Receiving file \'' + head[0] + '\' from user ' + u[0] + '.')
+    f = open(os.path.join(os.getcwd(), head[0]), 'wb')
     while f.tell() != head[1]:
         l = conn.recv(BUFFSIZE)
         f.write(l)
     f.close()
-    print('File \'' + head[0] + '\' received from ' + add[0] + ':' + str(add[1]))
+    print('File \'' + head[0] + '\' received from user ' + u[0] + '.')
     conn.send(b'done')
+    conn.recv(BUFFSIZE)
+    change_folder(conn, u, '.')

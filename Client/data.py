@@ -73,9 +73,8 @@ def receive_file(s, namefile, local):
     s.send(b'done')
 
 def send_file(s, namefile):
-    input('Press enter to send file')
     wait(s, b'ready')
-    s.send(pickle.dumps((namefile, os.stat(namefile).st_size)))
+    s.send(pickle.dumps((os.path.split(namefile)[1], os.stat(namefile).st_size)))
     wait(s, b'send')
     with open(namefile, 'rb') as f:
         l = f.read(BUFFSIZE)
@@ -84,4 +83,5 @@ def send_file(s, namefile):
             l = f.read(BUFFSIZE)
     print('File sent')
     wait(s, b'done')
+    s.send(b'1')
     print('File confirmation received')

@@ -116,68 +116,6 @@ class Folder_Window(Gtk.Window):
     def get_fold(self):
         return self.folder
 
-class Path_Window(Gtk.Window):
-
-    def __init__(self):
-        Gtk.Window.__init__(self, title='Change Path')
-        self.s = None
-        self.timeout_id = None
-        self.num = 0
-        self.path = ""
-
-        grid = Gtk.Grid()
-        grid.set_column_homogeneous(True)
-        grid.set_row_homogeneous(True)
-
-        box_top = Gtk.Box(spacing=6)
-        grid.attach(box_top, 0, 0, 1, 1)
-
-        label_u = Gtk.Label()
-        label_u.set_text('Path:')
-        grid.attach(label_u, 1, 1, 1, 1)
-        self.entry_u = Gtk.Entry()
-        grid.attach_next_to(self.entry_u, label_u, Gtk.PositionType.RIGHT, 3, 1)
-
-        path_but = Gtk.Button.new_with_label('New Path')
-        path_but.connect('clicked', self.new_p)
-
-        def_but = Gtk.Button.new_with_label('Default Path')
-        def_but.connect('clicked', self.def_fol)
-
-        v_box = Gtk.Box(spacing=6)
-
-        exit_but = Gtk.Button.new_with_label('Cancel')
-        exit_but.connect('clicked', self.exit_but)
-
-        end_box = Gtk.Box(spacing=6)
-
-        grid.attach_next_to(path_but, label_u, Gtk.PositionType.BOTTOM, 1, 1)
-        grid.attach_next_to(def_but, path_but, Gtk.PositionType.RIGHT, 1, 1)
-        grid.attach_next_to(v_box, def_but, Gtk.PositionType.RIGHT, 1, 1)
-        grid.attach_next_to(exit_but, v_box, Gtk.PositionType.RIGHT, 1, 1)
-        grid.attach_next_to(end_box, exit_but, Gtk.PositionType.BOTTOM, 2, 1)
-
-        self.add(grid)
-        self.show_all()
-
-    def new_p(self, button):
-        self.num = 1
-        self.path = self.entry_u.get_text()
-        self.destroy()
-
-    def def_fol(self, button):
-        self.num = 2
-        self.destroy()
-
-    def exit_but(self, button):
-        self.num = 0
-        self.destroy()
-
-    def get_num(self):
-        return self.num
-
-    def get_path(self):
-        return self.path
 
 class Main_Client(Gtk.Window):
 
@@ -273,7 +211,25 @@ class Main_Client(Gtk.Window):
         self.show_all()
 
     def add_but(self, button):
-        print('ADD FILE')
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore",category=DeprecationWarning)
+            dialog = Gtk.FileChooserDialog(title="Please select a file",
+                     action=Gtk.FileChooserAction.OPEN,
+                     buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                     Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+        dialog.set_default_size(800, 400)
+
+        t = dialog.run()
+        filename = dialog.get_filename()
+        dialog.destroy()
+        if t == Gtk.ResponseType.OK:
+            print('File selected')
+            self.s.send(b'6')
+            data.send_file(self.s, filename)
+
+            stack = pickle.loads(self.s.recv(data.BUFFSIZE))
+            self.add_tree(stack)
+
 
     def remove_but(self, button):
         model, mode = self.select.get_selected()
@@ -299,8 +255,19 @@ class Main_Client(Gtk.Window):
         self.add_tree(stack)
 
     def path_change(self, button):
-        self.action = 2
-        Gtk.main_quit()
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore",category=DeprecationWarning)
+            dialog = Gtk.FileChooserDialog(title="Please choose a folder",
+                     action=Gtk.FileChooserAction.SELECT_FOLDER,
+                     buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                     "Select", Gtk.ResponseType.OK))
+        dialog.set_default_size(800, 400)
+
+        if dialog.run() == Gtk.ResponseType.OK:
+            self.download_folder = dialog.get_filename()
+            print(self.download_folder)
+
+        dialog.destroy()
 
     def action_but(self, button):
         if button.get_label() == '<':
@@ -478,20 +445,6 @@ def kill_drive(win):
     win.s.send(b'0')
     Gtk.main_quit()
 
-def change_path(win):
-    p = Path_Window()
-    p.connect('destroy', Gtk.main_quit)
-    Gtk.main()
-
-    if p.get_num() == 1:
-        if os.path.exists(p.get_path()):
-            win.download_folder = p.get_path()
-        else:
-            print('Not a valid folder: ' + p.get_path())
-
-    elif p.get_num() == 2:
-        win.download_folder = data.DEFAULT_FOLDER
-
 def make_dir(win):
     p = Folder_Window()
     p.connect('destroy', Gtk.main_quit)
@@ -559,9 +512,7 @@ if __name__ == '__main__':
         win.connect('destroy', kill_drive)
         while win.action != 0:
             Gtk.main()
-            if win.action == 2:
-                change_path(win)
-            elif win.action == 3:
+            if win.action == 3:
                 make_dir(win)
             elif win.action == 4:
                 delete_obj(win)
