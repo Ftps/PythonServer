@@ -1,4 +1,4 @@
-import sys, socket, time, pickle, os, glob
+import sys, socket, time, pickle, os, glob, shutil
 
 BUFFSIZE = 4096
 DEFAULT_FOLDER = '/home/ftps/Documents/DataBase'
@@ -65,8 +65,13 @@ def data_base(conn, add, u):
             create_folder(conn, u)
         elif h == b'3':
             change_folder(conn, u, DEFAULT_FOLDER)
+        elif h == b'4':
+            delete_object(conn, u)
+        elif h == b'5':
+            send_file(conn, u)
         else:
-            pass
+            print('Unknown action.')
+            break
 
     end_conn(conn, add, str.encode('Thank you for accessing our server, ' + u[0] + '. Goodbye.'))
 
@@ -103,9 +108,21 @@ def create_folder(conn, u):
     conn.recv(BUFFSIZE)
     change_folder(conn, u, '.')
 
-def send_file(conn, add, namefile):
-    print('Sending \'' + namefile + '\' to ' + add[0] + ':' + str(add[1]))
-    wait(conn, b'ready')
+def delete_object(conn, u):
+    conn.send(b'name')
+    obj = conn.recv(BUFFSIZE).decode('utf-8')
+    print('Deleting ' + obj + ' in ' + os.getcwd() + ' as a request of user ' + u[0] + '.')
+    if os.path.isdir(obj):
+        shutil.rmtree(obj)
+    else:
+        os.remove(obj)
+
+    change_folder(conn, u, '.')
+
+def send_file(conn, u):
+    conn.send(b'1')
+    namefile = conn.recv(BUFFSIZE).decode('utf-8')
+    print('Sending \'' + namefile + '\' to user ' + u[0] + '.')
     conn.send(pickle.dumps((namefile, os.stat(namefile).st_size)))
     wait(conn, b'send')
     with open(namefile, 'rb') as f:
@@ -115,8 +132,7 @@ def send_file(conn, add, namefile):
             l = f.read(BUFFSIZE)
     print('File sent')
     wait(conn, b'done')
-    print('File confirmation from ' + add[0] + ':' + str(add[1]) + ' received')
-    time.sleep(0.5)
+    print('File confirmation from user ' + u[0] + ' received.')
 
 def receive_file(conn, add, local=DEFAULT_FOLDER):
     conn.send(b'ready')

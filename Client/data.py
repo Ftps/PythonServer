@@ -57,14 +57,14 @@ def server_client(s):
 
     print(s.recv(BUFFSIZE).decode('utf-8'))
 
-def receive_file(s, local=DEFAULT_FOLDER):
-    input('Press enter to receive file')
-    s.send(b'ready')
+def receive_file(s, namefile, local):
+    s.recv(BUFFSIZE)
+    s.send(str.encode(namefile))
     head = pickle.loads(s.recv(BUFFSIZE))
     s.send(b'send')
     print('Receiving file \'' + head[0] + '\'')
 
-    f = open(local + head[0], 'wb')
+    f = open(os.path.join(local, namefile), 'wb')
     while f.tell() != head[1]:
         l = s.recv(BUFFSIZE)
         f.write(l)

@@ -9,9 +9,62 @@ dir =  [('Books', 'Cur', '4096'),
         ('Book.pdf', 'File', '19986'),
         ('File.docx', 'File', '1287')]
 
+class Confirm(Gtk.Window):
+    def __init__(self):
+        Gtk.Window.__init__(self, title='Create New Folder')
+        self.timeout_id = None
+        self.num = 0
+
+    def window(self):
+        grid = Gtk.Grid()
+        grid.set_column_homogeneous(True)
+        grid.set_row_homogeneous(True)
+
+        box_top = Gtk.Box(spacing=6)
+        grid.attach(box_top, 0, 0, 1, 1)
+
+        label_u = Gtk.Label()
+        label_u.set_text(self.label)
+        label_u.set_justify(Gtk.Justification.CENTER)
+        grid.attach(label_u, 1, 1, 3, 1)
+
+        box = Gtk.Box(spacing=6)
+        grid.attach_next_to(box, label_u, Gtk.PositionType.BOTTOM, 3, 1)
+
+        okay_but = Gtk.Button.new_with_label('Yes')
+        okay_but.connect('clicked', self.okay_but)
+        grid.attach_next_to(okay_but, box, Gtk.PositionType.BOTTOM, 1, 1)
+
+        mid_box = Gtk.Box(spacing=6)
+        grid.attach_next_to(mid_box, okay_but, Gtk.PositionType.RIGHT, 1, 1)
+
+        exit_but = Gtk.Button.new_with_label('No')
+        exit_but.connect('clicked', self.exit_but)
+        grid.attach_next_to(exit_but, mid_box, Gtk.PositionType.RIGHT, 1, 1)
+
+        end_box = Gtk.Box(spacing=6)
+        grid.attach_next_to(end_box, exit_but, Gtk.PositionType.BOTTOM, 2, 1)
+
+        self.add(grid)
+        self.show_all()
+
+    def okay_but(self, button):
+        self.num = 1
+        self.destroy()
+
+    def exit_but(self, button):
+        self.num = 0
+        self.destroy()
+
+    def get_num(self):
+        return self.num
+
+    def label(self, text):
+        self.label = text
+
 class Folder_Window(Gtk.Window):
     def __init__(self):
-        Gtk.Window.__init__(self, title='Change Path')
+        Gtk.Window.__init__(self, title='Create New Folder')
         self.s = None
         self.timeout_id = None
         self.num = 0
@@ -177,7 +230,7 @@ class Main_Client(Gtk.Window):
         mkdir_but.connect('clicked', self.makedir_but)
 
 
-        self.change_but = Gtk.Button.new_with_label('Change Directory')
+        self.change_but = Gtk.Button.new_with_label('-')
         self.change_but.connect('clicked', self.action_but)
 
         path_but = Gtk.Button.new_with_label('Change Path')
@@ -223,7 +276,17 @@ class Main_Client(Gtk.Window):
         print('ADD FILE')
 
     def remove_but(self, button):
-        print('REMOVE KEBAB')
+        model, mode = self.select.get_selected()
+        try:
+            print(model[mode][0])
+        except:
+            print('Nothing selected.')
+            return
+
+        self.folder = model[mode][0]
+        self.action = 4
+        Gtk.main_quit()
+
 
     def makedir_but(self, button):
         self.action = 3
@@ -262,8 +325,9 @@ class Main_Client(Gtk.Window):
         model, mode = self.select.get_selected()
 
         try:
-            print(type(mode))
+            print(model[mode][0])
         except:
+            print('Nothing selected.')
             return
 
         if button.get_label() == 'Change Directory':
@@ -277,12 +341,17 @@ class Main_Client(Gtk.Window):
             else:
                 print('Error changing directory.')
                 sys.exit(-1)
+        elif button.get_label() == 'Download File':
+            self.action = 5
+            self.folder = model[mode][0]
+            Gtk.main_quit()
 
 
     def add_tree(self, stack):
         if self.treeview != None:
             self.scroll.destroy()
             self.treeview.destroy()
+            self.change_but.set_label('-')
         else:
             self.back = Gtk.Button()
             self.back.connect('clicked', self.action_but)
@@ -441,10 +510,41 @@ def make_dir(win):
             win.s.send(b'1')
             stack = pickle.loads(win.s.recv(data.BUFFSIZE))
             win.add_tree(stack)
-            print('New tree formed.')
         else:
             print('Error creating folder.')
             sys.exit(-2)
+
+def delete_obj(win):
+    p = Confirm()
+    p.connect('destroy', Gtk.main_quit)
+    p.label('Are you sure you wish to delete the following object?\nAll data inside will be lost.')
+    p.window()
+    Gtk.main()
+
+    if p.get_num() == 1:
+        win.s.send(b'4')
+        t = win.s.recv(data.BUFFSIZE)
+        if t == b'name':
+            win.s.send(str.encode(win.folder))
+
+            stack = pickle.loads(win.s.recv(data.BUFFSIZE))
+            win.add_tree(stack)
+        else:
+            print('Error deleting object.')
+            sys.exit(-3)
+
+def download_file(win):
+    p = Confirm()
+    p.connect('destroy', Gtk.main_quit)
+    p.label('Are you sure you wish to download the file to the current directory?\n' + win.download_folder)
+    p.window()
+    Gtk.main()
+
+    if p.get_num() == 1:
+        win.s.send(b'5')
+        data.receive_file(win.s, win.folder, win.download_folder)
+
+
 
 if __name__ == '__main__':
     win = Login_Screen()
@@ -463,3 +563,7 @@ if __name__ == '__main__':
                 change_path(win)
             elif win.action == 3:
                 make_dir(win)
+            elif win.action == 4:
+                delete_obj(win)
+            elif win.action == 5:
+                download_file(win)
